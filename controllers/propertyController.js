@@ -5,7 +5,7 @@ const propertyError = require('../utils/propertyError');
 
 const getProperties = async (req, res) => {
     try {
-        const { search, location, title,  minPrice, maxPrice, numberOfBedrooms, page = 1, limit = 9 } = req.query;
+        const { search, location, title,  minPrice, maxPrice, numberOfBedrooms, sort = "default", page = 1, limit = 9 } = req.query;
         const query = {};
 
         if (search) {
@@ -22,12 +22,15 @@ const getProperties = async (req, res) => {
         if (title) {
             query.title = { $regex: title, $options: 'i' };
         };
+        
 
+        let priceFilter = {};
+        if (minPrice) priceFilter.$gte = Number(minPrice.replace(/,/g, ''));
+        if (maxPrice) priceFilter.$lte = Number(maxPrice.replace(/,/g, ''));
         if (minPrice || maxPrice) {
-            query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice);
-            if (maxPrice) query.price.$lte = Number(maxPrice);
+            query.price = priceFilter;
         }
+        
         if (numberOfBedrooms) {
             query.numberOfBedrooms = Number(numberOfBedrooms);
         }
@@ -36,17 +39,31 @@ const getProperties = async (req, res) => {
 
         let sortOption = {};
         if (sort === "newest") sortOption = { createdAt: -1 };
-        if (sort === "priceLowToHigh") sortOption = { price: 1 };
-        if (sort === "priceHighToLow") sortOption = { price: -1 };
-        const properties = await Property.find(query).sort(sortOption).skip(skip).limit(Number(limit));
+        if (sort === "price-high") sortOption = { priceNumber: -1 };
+        if (sort === "price-low") sortOption = { priceNumber: 1 };
+
+
+        const properties = await Property.find(query).lean();
+        properties = properties.map((p) => ({
+            ...p,
+            priceNumber: Number(p.price.replace(/,/g, '')), 
+        }));
+
+        if (sort === "price-high") {
+            properties.sort((a, b) => b.priceNumber - a.priceNumber);
+        }else if (sort === "price-low") {
+            properties.sort((a, b) => a.priceNumber - b.priceNumber);
+        };
         
 
         const total = await Property.countDocuments(query);
+        const paginated = properties.slice(skip, skip + Number(limit));
 
-        res.status(200).json({ success: true, total, page: Number(page), pages: Math.ceil(total / limit), properties });
+        res.status(200).json({ success: true, total, page: Number(page), pages: Math.ceil(total / limit), properties: paginated });
     } catch (error) {
         const errors = propertyError(error);
         res.status(500).json({success : false, errors });
+    
     }
 };
 
