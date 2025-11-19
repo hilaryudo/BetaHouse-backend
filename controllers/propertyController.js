@@ -5,30 +5,40 @@ const propertyError = require('../utils/propertyError');
 
 const getProperties = async (req, res) => {
     try {
-        const { search, location, minPrice, maxPrice, bedrooms, page = 1, limit = 10 } = req.query;
+        const { search, location, title,  minPrice, maxPrice, numberOfBedrooms, page = 1, limit = 9 } = req.query;
         const query = {};
 
         if (search) {
             query.$or = [
                 { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
+                { description: { $regex: search, $options: 'i' } },
             ];
         }
 
         if (location) {
             query.location = { $regex: location, $options: 'i' };
         };
+
+        if (title) {
+            query.title = { $regex: title, $options: 'i' };
+        };
+
         if (minPrice || maxPrice) {
             query.price = {};
             if (minPrice) query.price.$gte = Number(minPrice);
             if (maxPrice) query.price.$lte = Number(maxPrice);
         }
-        if (bedrooms) {
-            query.bedrooms = Number(bedrooms);
+        if (numberOfBedrooms) {
+            query.numberOfBedrooms = Number(numberOfBedrooms);
         }
 
         const skip = (page - 1) * limit;
-        const properties = (await Property.find(query).skip(skip).limit(Number(limit))).sort((a, b) => b.createdAt - a.createdAt);
+
+        let sortOption = {};
+        if (sort === "newest") sortOption = { createdAt: -1 };
+        if (sort === "priceLowToHigh") sortOption = { price: 1 };
+        if (sort === "priceHighToLow") sortOption = { price: -1 };
+        const properties = await Property.find(query).sort(sortOption).skip(skip).limit(Number(limit));
         
 
         const total = await Property.countDocuments(query);
