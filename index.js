@@ -6,6 +6,7 @@ const propertyRouter = require('./routes/propertyRouter');
 const fileUpload = require('express-fileupload');
 const cloudinary = require('cloudinary').v2;
 const notFound = require('./utils/notFound');
+const cors = require('cors');
 dbConnect();
  
 cloudinary.config({
@@ -20,6 +21,7 @@ const app = express();
 app.use(express.json());
 app.use(fileUpload({useTempFiles: true}));
 
+app.use(cors());
 
 app.use('/api/v1/', authRouter);
 app.use('/api/v1/properties', propertyRouter);
