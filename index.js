@@ -22,7 +22,6 @@ app.use(express.json());
 app.use(fileUpload({useTempFiles: true}));
 
 app.use(cors());
-
 app.use('/api/v1/', authRouter);
 app.use('/api/v1/properties', propertyRouter);
 
