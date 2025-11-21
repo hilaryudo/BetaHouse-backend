@@ -8,13 +8,6 @@ const getProperties = async (req, res) => {
         const { location, title, numberOfBedrooms, page = 1, limit = 9 } = req.query;
         const query = {};
 
-        // if (search) {
-        //     query.$or = [
-        //         { title: { $regex: search, $options: 'i' } },
-        //         { description: { $regex: search, $options: 'i' } },
-        //     ];
-        // }
-
         if (location) {
             query.location = { $regex: location, $options: 'i' };
         };
@@ -23,46 +16,19 @@ const getProperties = async (req, res) => {
             query.title = { $regex: title, $options: 'i' };
         };
         
-
-        // let priceFilter = {};
-        // if (minPrice) priceFilter.$gte = Number(minPrice.replace(/,/g, ''));
-        // if (maxPrice) priceFilter.$lte = Number(maxPrice.replace(/,/g, ''));
-        // if (minPrice || maxPrice) {
-        //     query.price = priceFilter;
-        // }
-        
         if (numberOfBedrooms) {
             query.numberOfBedrooms = Number(numberOfBedrooms);
         }
 
         const skip = (page - 1) * limit;
 
-        // let sortOption = {};
-        // if (sort === "newest") sortOption = { createdAt: -1 };
-        // if (sort === "price-high") sortOption = { priceNumber: -1 };
-        // if (sort === "price-low") sortOption = { priceNumber: 1 };
-
-
         const properties = await Property.find(query).skip(skip).limit(Number(limit));
-        // properties = properties.map((p) => ({
-        //     ...p,
-        //     priceNumber: Number(p.price.replace(/,/g, '')), 
-        // }));
-
-        // if (sort === "price-high") {
-        //     properties.sort((a, b) => b.priceNumber - a.priceNumber);
-        // }else if (sort === "price-low") {
-        //     properties.sort((a, b) => a.priceNumber - b.priceNumber);
-        // };
-        
-
         const total = await Property.countDocuments(query);
-        // const paginated = properties.slice(skip, skip + Number(limit));
-
+        
         res.status(200).json({ success: true, total, page: Number(page), pages: Math.ceil(total / limit), properties});
     } catch (error) {
         const errors = propertyError(error);
-        res.status(500).json({success : false, errors });
+        res.status(500).json({success : false, errors }); 
     
     }
 };
